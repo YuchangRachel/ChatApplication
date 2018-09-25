@@ -1,3 +1,4 @@
+package com.chatapplication
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -60,6 +61,10 @@ public class Chat {
 			throw new RuntimeException(e);
 		}
 		return ip;
+	}
+	public static void connectTo() throws SocketException{
+		Connect connection = new Connect()
+
 	}
 
 	//help command input: Display information about the available user interface options or command manual

@@ -1,7 +1,7 @@
-// File Name GreetingServer.java
+package com.chatapplication
 import java.net.*;
 import java.io.*;
-
+// File Name GreetingServer.java
 public class GreetingServer extends Thread {
    private ServerSocket serverSocket;
    

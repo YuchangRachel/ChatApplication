@@ -1,10 +1,18 @@
-package com.chatapplication
-
+package com.chatapplication;
+import java.net.*;
 public class Connect extends Thread {
-    public InetAddress ip;
+    public String ipString;
+    public InetAddress addr;
+    public void connect(Socket socket){
+        System.out.println("Connecting to" + socket);
 
-    public connect(String ip){
-        //fill me in
-        System.out.println("Connecting to" + ip);
+    }
+    Connect(String ipString) throws SocketException{
+        this.ipString = ipString;
+        try {
+            this.addr = InetAddress.getByName(ipString);
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

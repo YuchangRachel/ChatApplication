@@ -1,4 +1,4 @@
-package com.chatapplication
+package com.chatapplication;
 import java.net.*;
 import java.io.*;
 // File Name GreetingServer.java

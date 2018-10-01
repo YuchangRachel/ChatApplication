@@ -1,4 +1,4 @@
-package com.chatapplication
+package com.chatapplication;
 import java.io.*;
 import java.net.*;
 import java.util.*;

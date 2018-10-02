@@ -17,7 +17,7 @@ public class Chat {
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new InputStreamReader(System.in));
-			String addr = InetAddress. getLocalHost().getLoopbackAddress().toString();
+			String addr = InetAddress.getLocalHost().getLoopbackAddress().toString();
 
 			while (true){
 				String input = br.readLine();
@@ -30,6 +30,12 @@ public class Chat {
 				}
 				if (input.equals("help")){
 					help();
+				}
+				if (input.contains("connect")){
+					ArrayList s = new Scanner(input).useDelimiter("\\s");
+					if(s.length > 2){
+						System.out.println("we good fam");
+					}
 				}
 			}
 		}catch (IOException e){

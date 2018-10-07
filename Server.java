@@ -22,11 +22,13 @@ public class Server extends Thread {
 				int port = conn.getPort();
 				Peer peer = new Peer(conn, port);
 
+
 				//server side, also need to update list
 				Chat.addChatList(peer);
 
 				//server's thread client
 				Client client = new Client(new Peer(conn));
+				client.getMessage();
 				client.start();
 			}
 		} catch (Exception e) {

@@ -4,7 +4,7 @@ import java.util.*;
 
 public class Chat {
 	//global variable tacking peer who is connected 
-	public static List<Peer> chatList = new ArrayList<Peer>();
+	public static List<Peer> chatList = new ArrayList<>();
 
 
 	public static void main(String[] args) throws Exception{
@@ -34,7 +34,7 @@ public class Chat {
 
 			while (true){
 				String input = br.readLine();
-				String[] lines = input.split(" ");
+				String[] lines = input.split(" ", 3);   
 
 				if (input.equals("myport")){
 					System.out.println("The program runs on port number: " + myport);
@@ -52,7 +52,7 @@ public class Chat {
 					list();
 				}
 				else if (lines[0].equals("send")){
-					System.out.print(send(input));
+					send(Integer.parseInt(lines[1]), lines[2]);  //lines[2] is whole message, including blank space
 				}
 				else if (lines[0].equals("terminate")){
 
@@ -126,29 +126,26 @@ public class Chat {
 
 	//list 
 	public static void list(){
-		System.out.println("id:   IP address:       Port No.:");
+		System.out.println("id:   IP address:   Port No.:");
 		for (Peer peer : chatList){
 			System.out.println(peer.getList());
 		}
 	}
 
 	//send <connection id><message>
-	public static String send(String input){
-		String[] part = input.split(" ");
-		int connId = Integer.parseInt(part[0]);
-		String msg = part[1];
-
+	public static void send(int connId, String msg){
 		if (connId < 0 || connId > chatList.size())
-			return "Connection id is out of bound, please check it in 'list'command!!!";
+			System.out.println("Connection id is out of bound, please check it in 'list'command!!!");
 		if (msg.length() > 100)
-			return "Message is out of 100 characters long, including blank spaces!!!";
+			System.out.println("Message is out of 100 characters long, including blank spaces!!!");
 		
 		for (Peer peer : chatList){
 			if (connId == peer.getId()){
+				System.out.println("testing");
 				peer.sendMessage(msg);
+				return;
 			}
 		}
-		return "Send out!";
 
 	}
 

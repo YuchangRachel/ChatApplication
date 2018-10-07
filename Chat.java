@@ -135,14 +135,20 @@ public class Chat {
 	//send <connection id><message>
 	public static String send(String input){
 		String[] part = input.split(" ");
-		int connId = part[0];
+		int connId = Integer.parseInt(part[0]);
 		String msg = part[1];
 
-		if (connInt < 0 || connInt > chatList.size())
+		if (connId < 0 || connId > chatList.size())
 			return "Connection id is out of bound, please check it in 'list'command!!!";
 		if (msg.length() > 100)
 			return "Message is out of 100 characters long, including blank spaces!!!";
-
+		
+		for (Peer peer : chatList){
+			if (connId == peer.getId()){
+				peer.sendMessage(msg);
+			}
+		}
+		return "Send out!";
 
 	}
 
@@ -151,21 +157,21 @@ public class Chat {
 	public static boolean isValidIPv4(String ip) {
 		if (ip.length() < 7) return false;
 		if (ip.charAt(0) == '.') return false;
-		if (ip.charAt(ip.length()-1) == '.') return false;
+		if (ip.charAt(ip.length()- 1) == '.') return false;
 		String[] tokens = ip.split("\\.");
-		if(tokens.length!=4) return false;
+		if(tokens.length != 4) return false;
 		for(String token:tokens) {
 			if(!isValidIPv4Token(token)) return false;
 		}
 		return true;
 	}
-	public boolean isValidIPv4Token(String token) {
-		if(token.startsWith("0") && token.length()>1) return false;
+	public static boolean isValidIPv4Token(String token) {
+		if(token.startsWith("0") && token.length() > 1) return false;
 		try {
 			int parsedInt = Integer.parseInt(token);
-			if(parsedInt<0 || parsedInt>255) return false;
-			if(parsedInt==0 && token.charAt(0)!='0') return false;
-		} catch(NumberFormatException nfe) {
+			if(parsedInt < 0 || parsedInt > 255) return false;
+			if(parsedInt == 0 && token.charAt(0) != '0') return false;
+		} catch(NumberFormatException e) {
 			return false;
 		}
 		return true;

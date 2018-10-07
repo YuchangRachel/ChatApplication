@@ -48,7 +48,7 @@ public class Chat {
 					server.list();
 				}
 				else if (lines[0].equals("send")){
-					server.send(Integer.parseInt(lines[1]), lines[2]);  //lines[2] is whole message, including blank space
+					System.out.print(server.send(Integer.parseInt(lines[1]), lines[2]));  //lines[2] is whole message, including blank space
 				}
 				else if (lines[0].equals("terminate")){
 
@@ -157,6 +157,13 @@ public class Chat {
 				return "Invalid ip, check it again!!!\n";
 
 
+			//testing
+			/*
+			   if (desIp.equals(getMyIp())){
+			   return "Self connection failed!!!\n";   //self connection situation
+			   }
+			   */
+
 			Socket client = new Socket();
 			try{
 				client.connect(new InetSocketAddress(desIp, desPort));
@@ -165,6 +172,8 @@ public class Chat {
 
 				//add peer into list
 				chatList.add(newChat);
+
+				chatList.get(chatList.size()-1).sendMessage("The connection to another peer is successfully established");
 
 				return "The connection to peer " + desIp + " is successfully established\n";
 			}catch(Exception i){
@@ -185,13 +194,13 @@ public class Chat {
 		}
 
 		//send <connection id><message>
-		public void send(int connId, String msg){
+		public String send(int connId, String msg){
 			if (connId < 0 || connId > chatList.size())
-				System.out.println("Connection id is out of bound, please check it in 'list'command!!!");
+				return "Connection id is out of bound, please check it in 'list'command!!!\n";
 			if (msg.length() > 100)
-				System.out.println("Message is out of 100 characters long, including blank spaces!!!");
+				return "Message is out of 100 characters long, including blank spaces!!!\n";
 			chatList.get(connId-1).sendMessage(msg);
-			System.out.println("Message sent");
+			return "Message sent out!\n";
 
 		}
 
@@ -249,23 +258,30 @@ public class Chat {
 
 			while(!endThread){
 				try{
-					int type = in.readInt();
+					int messageType = in.readInt();
 
-					if( type == -1 ) {
-						endThread = true;
-						System.out.println("\nClient " + getHost() + ":" + getPort() +" disconnected.\n");
-						System.out.print(">>");
-						peers.remove(this);
-						break;
+					switch(messageType){
+
+						case -1: 
+							endThread = true;
+							System.out.println("\nClient " + getHost() + ":" + getPort() +" disconnected.\n");
+							System.out.print(">>");
+							peers.remove(this);
+							break;
+
+						case 1:
+							String connResponse = in.readUTF();
+							System.out.println("The connection to peer " + getHost() + " is successfully established");
+							break;
+
+						case 2:
+							String response = in.readUTF();
+
+							System.out.println("\nMessage received from " + getHost());
+							System.out.println("Sender's Port: " + getPort());
+							System.out.println("Message: " + response);
 
 					}
-					else if (type == 2) {
-						String message = in.readUTF();
-						System.out.println("\nMessage from " + getHost() + ":" + getPort());
-						System.out.println(message);
-						System.out.println("\n");
-					}
-
 				} catch (Exception e) {}
 			}
 			try {
@@ -279,6 +295,10 @@ public class Chat {
 
 		public void sendMessage(String message) {
 			try {
+				out.writeInt(1);
+				out.writeUTF(message);
+				out.flush();
+
 				out.writeInt(2);
 				out.writeUTF(message);
 				out.flush();
@@ -298,7 +318,11 @@ public class Chat {
 
 		}
 
-		public String getHost(){return client.getInetAddress().getHostAddress();}
-		public int getPort(){return client.getLocalPort();}
+		public String getHost(){
+			return client.getInetAddress().getHostAddress();
+		}
+		public int getPort(){
+			return client.getPort();
+		}
 	}
 }

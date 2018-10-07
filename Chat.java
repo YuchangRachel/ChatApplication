@@ -3,10 +3,6 @@ import java.net.*;
 import java.util.*;
 
 public class Chat {
-	//global variable tacking peer who is connected 
-	public static List<Peer> chatList = new ArrayList<>();
-
-
 	public static void main(String[] args) throws Exception{
 		//no arguments passed
 		if (args.length == 0){
@@ -46,13 +42,13 @@ public class Chat {
 					help();
 				}
 				else if (lines[0].equals("connect")){
-					System.out.print(connect(input));
+					System.out.print(server.connect(input));
 				}
 				else if (lines[0].equals("list")){
-					list();
+					server.list();
 				}
 				else if (lines[0].equals("send")){
-					send(Integer.parseInt(lines[1]), lines[2]);  //lines[2] is whole message, including blank space
+					server.send(Integer.parseInt(lines[1]), lines[2]);  //lines[2] is whole message, including blank space
 				}
 				else if (lines[0].equals("terminate")){
 
@@ -70,108 +66,6 @@ public class Chat {
 			e.printStackTrace();
 		}
 
-	}
-
-	//client connect to other server is connected who also need update list 
-	public static void addChatList(Peer peer){
-		chatList.add(peer);
-	}
-
-	//connect <destination ip><destination port>
-	public static String connect(String input){
-		String[] line = input.split(" ");
-		String desIp = line[1];
-		int desPort = Integer.parseInt(line[2]);
-
-		if (line.length < 3)
-			return "Invalid connection input, try again!!!\n";
-
-		//A valid port value is between 0 and 65535
-		if ((desPort< 0) || (desPort > 65535))
-			return "Invalid port number, try again!!!\n";
-
-		//check ip valid or not
-		if (!isValidIPv4(desIp))
-			return "Invalid ip, check it again!!!\n";
-
-
-		try{
-			Socket socket = new Socket(desIp, desPort);
-			Peer peer = new Peer(socket, desPort);
-
-			//testing
-			/*
-			   if (desIp.equals(getMyIp())){
-			   return "Self connection failed!!!\n";   //self connection situation
-			   }
-			//if (duplicate connection using list)
-			*/
-
-			peer.sendMessage("The connection to another peer is successfully established");
-
-			//add peer into list
-			chatList.add(peer);
-
-			return "The connection to peer " + desIp + " is successfully established\n";
-
-		}catch(UnknownHostException e){
-			return "It is unknown hostname, connection failed!!!";
-		}
-		catch(Exception i){
-			return "Connection failed!!!";
-		}
-
-
-	}
-
-	//list 
-	public static void list(){
-		System.out.println("id:   IP address:   Port No.:");
-		for (Peer peer : chatList){
-			System.out.println(peer.getList());
-		}
-	}
-
-	//send <connection id><message>
-	public static void send(int connId, String msg){
-		if (connId < 0 || connId > chatList.size())
-			System.out.println("Connection id is out of bound, please check it in 'list'command!!!");
-		if (msg.length() > 100)
-			System.out.println("Message is out of 100 characters long, including blank spaces!!!");
-		
-		for (Peer peer : chatList){
-			if (connId == peer.getId()){
-				System.out.println("testing");
-				peer.sendMessage(msg);
-				return;
-			}
-		}
-
-	}
-
-
-	//validate ip
-	public static boolean isValidIPv4(String ip) {
-		if (ip.length() < 7) return false;
-		if (ip.charAt(0) == '.') return false;
-		if (ip.charAt(ip.length()- 1) == '.') return false;
-		String[] tokens = ip.split("\\.");
-		if(tokens.length != 4) return false;
-		for(String token:tokens) {
-			if(!isValidIPv4Token(token)) return false;
-		}
-		return true;
-	}
-	public static boolean isValidIPv4Token(String token) {
-		if(token.startsWith("0") && token.length() > 1) return false;
-		try {
-			int parsedInt = Integer.parseInt(token);
-			if(parsedInt < 0 || parsedInt > 255) return false;
-			if(parsedInt == 0 && token.charAt(0) != '0') return false;
-		} catch(NumberFormatException e) {
-			return false;
-		}
-		return true;
 	}
 
 	//get ip
@@ -210,4 +104,201 @@ public class Chat {
 	}
 
 
+
+	public static class Server extends Thread{
+		public List<PeerConnection> chatList;
+		private boolean endThread = false;
+		private int port;
+		ServerSocket server = null;
+
+		public Server(int port) throws IOException{
+			this.port = port;
+			chatList = Collections.synchronizedList(new ArrayList<PeerConnection>());
+		}
+
+		public void run(){
+			try {
+				server = new ServerSocket(port);
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+
+			while(!endThread){
+				Socket conn = null;
+				try{
+					conn = server.accept();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				if (conn != null) {
+					PeerConnection newChat = new PeerConnection(conn, chatList);
+					newChat.start();
+					chatList.add(newChat);
+				}
+			}
+		}
+
+		//connect <destination ip><destination port>
+		public String connect(String input){
+			String[] line = input.split(" ");
+			String desIp = line[1];
+			int desPort = Integer.parseInt(line[2]);
+
+			if (line.length < 3)
+				return "Invalid connection input, try again!!!\n";
+
+			//A valid port value is between 0 and 65535
+			if ((desPort< 0) || (desPort > 65535))
+				return "Invalid port number, try again!!!\n";
+
+			//check ip valid or not
+			if (!isValidIPv4(desIp))
+				return "Invalid ip, check it again!!!\n";
+
+
+			Socket client = new Socket();
+			try{
+				client.connect(new InetSocketAddress(desIp, desPort));
+				PeerConnection newChat = new PeerConnection(client, chatList);
+				newChat.start();
+
+				//add peer into list
+				chatList.add(newChat);
+
+				return "The connection to peer " + desIp + " is successfully established\n";
+			}catch(Exception i){
+				return "Connection failed!!!";
+			}
+
+
+
+		}
+
+
+		//list 
+		public void list(){
+			System.out.println("id:   IP address:   Port No.:");
+			for (int i = 0; i < chatList.size(); i++){
+				System.out.println((i+1) + " : " + chatList.get(i).getHost() + "   " + chatList.get(i).getPort());
+			}
+		}
+
+		//send <connection id><message>
+		public void send(int connId, String msg){
+			if (connId < 0 || connId > chatList.size())
+				System.out.println("Connection id is out of bound, please check it in 'list'command!!!");
+			if (msg.length() > 100)
+				System.out.println("Message is out of 100 characters long, including blank spaces!!!");
+			chatList.get(connId-1).sendMessage(msg);
+			System.out.println("Message sent");
+
+		}
+
+
+		//validate ip
+		public static boolean isValidIPv4(String ip) {
+			if (ip.length() < 7) return false;
+			if (ip.charAt(0) == '.') return false;
+			if (ip.charAt(ip.length()- 1) == '.') return false;
+			String[] tokens = ip.split("\\.");
+			if(tokens.length != 4) return false;
+			for(String token:tokens) {
+				if(!isValidIPv4Token(token)) return false;
+			}
+			return true;
+		}
+		public static boolean isValidIPv4Token(String token) {
+			if(token.startsWith("0") && token.length() > 1) return false;
+			try {
+				int parsedInt = Integer.parseInt(token);
+				if(parsedInt < 0 || parsedInt > 255) return false;
+				if(parsedInt == 0 && token.charAt(0) != '0') return false;
+			} catch(NumberFormatException e) {
+				return false;
+			}
+			return true;
+		}
+
+
+	}
+
+
+
+
+	public static class PeerConnection extends Thread{
+		private boolean endThread = false;
+		private List<PeerConnection> peers;
+		Socket client = null;
+		DataOutputStream out = null;
+		DataInputStream in = null;
+
+
+		public PeerConnection(Socket client, List<PeerConnection> peers) {
+			this.client = client;
+			this.peers = peers;
+
+		}
+
+		public void run(){
+			try{
+				out = new DataOutputStream(client.getOutputStream());
+				in = new DataInputStream(client.getInputStream());
+			} catch (Exception e) {return;}
+
+
+			while(!endThread){
+				try{
+					int type = in.readInt();
+
+					if( type == -1 ) {
+						endThread = true;
+						System.out.println("\nClient " + getHost() + ":" + getPort() +" disconnected.\n");
+						System.out.print(">>");
+						peers.remove(this);
+						break;
+
+					}
+					else if (type == 2) {
+						String message = in.readUTF();
+						System.out.println("\nMessage from " + getHost() + ":" + getPort());
+						System.out.println(message);
+						System.out.println("\n");
+					}
+
+				} catch (Exception e) {}
+			}
+			try {
+				out.close();
+				in.close();
+				client.close();
+
+			} catch (Exception e) {}
+
+		}
+
+		public void sendMessage(String message) {
+			try {
+				out.writeInt(2);
+				out.writeUTF(message);
+				out.flush();
+			} catch(Exception e){
+				// System.out.println(e);
+			}
+		}
+
+		public void disconnect(){
+			try {
+				out.writeInt(-1);
+				out.flush();
+			} catch(Exception e){
+				// System.out.println(e);
+			}
+			endThread = true;
+
+		}
+
+		public String getHost(){return client.getInetAddress().getHostAddress();}
+		public int getPort(){return client.getLocalPort();}
+	}
 }

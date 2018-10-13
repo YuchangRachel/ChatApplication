@@ -72,7 +72,7 @@ public class Chat {
 	}
 
 	//get ip
-	public static String getMyIp() throws SocketException{
+	public static String getMyIp(){
 		String ip = null;
 		try {
 			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -167,12 +167,9 @@ public class Chat {
 				return "Invalid ip, check it again!!!\n";
 
 
-			//testing
-			/*
-			   if (desIp.equals(getMyIp())){
-			   return "Self connection failed!!!\n";   //self connection situation
-			   }
-			   */
+			if (desIp.equals(getMyIp())){
+				return "Self connection failed!!!\n";   //self connection situation
+			}
 
 			//Socket client = new Socket();
 			Socket client = null;
@@ -185,13 +182,14 @@ public class Chat {
 
 				//add peer into list
 				chatList.add(newChat);
+				Thread.sleep(2);
+				chatList.get(chatList.size() - 1).connectNotify();
 
 			}catch(Exception i){
 				return "Connection failed!!!";
 			}
 
 
-			//chatList.get(chatList.size() - 1).connectNotify();
 			return "The connection to peer " + desIp + " is successfully established\n";
 
 

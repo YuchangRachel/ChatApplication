@@ -54,8 +54,7 @@ public class Chat {
 					System.out.print(server.terminate(input));
 				}
 				else if (lines[0].equals("exit")){
-					server.end();
-					break;
+
 				}
 				else {
 					System.out.println("Insert correct command input or enter 'help' to see manual!!!");
@@ -108,7 +107,7 @@ public class Chat {
 
 	public static class Server extends Thread{
 		public List<PeerConnection> chatList;
-		private volatile boolean endThread = false;
+		private boolean endThread = false;
 		private int port;
 		ServerSocket server = null;
 
@@ -165,11 +164,13 @@ public class Chat {
 			   }
 			   */
 
-			Socket client = new Socket();
+			//Socket client = new Socket();
+			Socket client = null;
+			PeerConnection newChat = null;
 			try{
-				client.connect(new InetSocketAddress(desIp, desPort));
+				//client.connect(new InetSocketAddress(desIp, desPort));
 				client = new Socket(desIp, desPort);
-				PeerConnection newChat = new PeerConnection(client, chatList);
+				newChat = new PeerConnection(client, chatList);
 				newChat.start();
 
 				//add peer into list
@@ -179,9 +180,8 @@ public class Chat {
 				return "Connection failed!!!";
 			}
 
-			System.out.println(chatList.get(0));
 
-			chatList.get(chatList.size() - 1).connectNotify();
+			//chatList.get(chatList.size() - 1).connectNotify();
 			return "The connection to peer " + desIp + " is successfully established\n";
 
 
@@ -228,145 +228,130 @@ public class Chat {
 			return "Chat connection terminated\n";
 		}
 
-		public void end(){
-			// go through the list through the list and terminate all connections
-			for(Iterator<PeerConnection> iter = chatList.iterator(); iter.hasNext();){
-				PeerConnection c = iter.next();
-				c.disconnect();
-				iter.remove();
+
+
+		//validate ip
+		public static boolean isValidIPv4(String ip) {
+			if (ip.length() < 7) return false;
+			if (ip.charAt(0) == '.') return false;
+			if (ip.charAt(ip.length()- 1) == '.') return false;
+			String[] tokens = ip.split("\\.");
+			if(tokens.length != 4) return false;
+			for(String token:tokens) {
+				if(!isValidIPv4Token(token)) return false;
+			}
+			return true;
+		}
+		public static boolean isValidIPv4Token(String token) {
+			if(token.startsWith("0") && token.length() > 1) return false;
+			try {
+				int parsedInt = Integer.parseInt(token);
+				if(parsedInt < 0 || parsedInt > 255) return false;
+				if(parsedInt == 0 && token.charAt(0) != '0') return false;
+			} catch(NumberFormatException e) {
+				return false;
+			}
+			return true;
+		}
+
+
+	}
+
+
+
+
+	public static class PeerConnection extends Thread{
+		private boolean endThread = false;
+		private List<PeerConnection> peers;
+		Socket client = null;
+		DataOutputStream out = null;
+		DataInputStream in = null;
+
+
+		public PeerConnection(Socket client, List<PeerConnection> peers) {
+			this.client = client;
+			this.peers = peers;
+
+		}
+
+		public void run(){
+			try{
+				out = new DataOutputStream(client.getOutputStream());
+				in = new DataInputStream(client.getInputStream());
+			} catch (Exception e) {return;}
+
+
+			while(!endThread){
+				try{
+					int messageType = in.readInt();
+
+					switch(messageType){
+
+						case -1: 
+							endThread = true;
+							System.out.println("\nClient " + getHost() + ":" + getPort() +" disconnected.\n");
+							peers.remove(this);
+							break;
+
+						case 1:
+							System.out.println("The connection to peer " + getHost() + " is successfully established");
+							break;
+
+						case 2:
+							String response = in.readUTF();
+
+							System.out.println("\nMessage received from " + getHost());
+							System.out.println("Sender's Port: " + getPort());
+							System.out.println("Message: " + response);
+
+					}
+				} catch (Exception e) {}
 			}
 			try {
-				server.close();
+				out.close();
+				in.close();
+				client.close();
 
-			}catch (Exception e){
-				endThread = true;
-			}
-
-		}
-
-
-	//validate ip
-	public static boolean isValidIPv4(String ip) {
-		if (ip.length() < 7) return false;
-		if (ip.charAt(0) == '.') return false;
-		if (ip.charAt(ip.length()- 1) == '.') return false;
-		String[] tokens = ip.split("\\.");
-		if(tokens.length != 4) return false;
-		for(String token:tokens) {
-			if(!isValidIPv4Token(token)) return false;
-		}
-		return true;
-	}
-	public static boolean isValidIPv4Token(String token) {
-		if(token.startsWith("0") && token.length() > 1) return false;
-		try {
-			int parsedInt = Integer.parseInt(token);
-			if(parsedInt < 0 || parsedInt > 255) return false;
-			if(parsedInt == 0 && token.charAt(0) != '0') return false;
-		} catch(NumberFormatException e) {
-			return false;
-		}
-		return true;
-	}
-
-
-}
-
-
-
-
-public static class PeerConnection extends Thread{
-	private volatile boolean endThread = false;
-	private List<PeerConnection> peers;
-	Socket client = null;
-	DataOutputStream out = null;
-	DataInputStream in = null;
-
-
-	public PeerConnection(Socket client, List<PeerConnection> peers) {
-		this.client = client;
-		this.peers = peers;
-
-	}
-
-	public void run(){
-		try{
-			out = new DataOutputStream(client.getOutputStream());
-			in = new DataInputStream(client.getInputStream());
-		} catch (Exception e) {return;}
-
-
-		while(!endThread){
-			try{
-				int messageType = in.readInt();
-
-				switch(messageType){
-
-					case -1: 
-						endThread = true;
-						System.out.println("\nClient " + getHost() + ":" + getPort() +" disconnected.\n");
-						peers.remove(this);
-						break;
-
-					case 1:
-						System.out.println("The connection to peer " + getHost() + " is successfully established");
-						break;
-
-					case 2:
-						String response = in.readUTF();
-
-						System.out.println("\nMessage received from " + getHost());
-						System.out.println("Sender's Port: " + getPort());
-						System.out.println("Message: " + response);
-
-				}
 			} catch (Exception e) {}
+
 		}
-		try {
-			out.close();
-			in.close();
-			client.close();
 
-		} catch (Exception e) {}
+		public void connectNotify(){
+			try{
+				out.writeInt(1);
+				out.flush();
+			}catch(Exception e){
+				System.out.println(e);
+			}
+		}
 
-	}
+		public void sendMessage(String message) {
+			try {
+				out.writeInt(2);
+				out.writeUTF(message);
+				out.flush();
+			} catch(Exception e){
+				// System.out.println(e);
+			}
+		}
 
-	public void connectNotify(){
-		try{
-			out.writeInt(1);
-			out.flush();
-		}catch(Exception e){
-			System.out.println(e);
+
+		public void disconnect(){
+			try {
+				out.writeInt(-1);
+				out.flush();
+			} catch(Exception e){
+				// System.out.println(e);
+			}
+			endThread = true;
+
+		}
+
+		public String getHost(){
+			return client.getInetAddress().getHostAddress();
+		}
+		public int getPort(){
+			return client.getPort();
 		}
 	}
-
-	public void sendMessage(String message) {
-		try {
-			out.writeInt(2);
-			out.writeUTF(message);
-			out.flush();
-		} catch(Exception e){
-			// System.out.println(e);
-		}
-	}
-
-
-	public void disconnect(){
-		try {
-			out.writeInt(-1);
-			out.flush();
-		} catch(Exception e){
-			// System.out.println(e);
-		}
-		endThread = true;
-
-	}
-
-	public String getHost(){
-		return client.getInetAddress().getHostAddress();
-	}
-	public int getPort(){
-		return client.getPort();
-	}
-}
 }

@@ -171,14 +171,16 @@ public class Chat {
 			if (!isValidIPv4(desIp))
 				return "Invalid ip, check it again!!!\n";
 
-
 			if (desIp.equals(getMyIp())){
 				return "Self connection failed!!!\n";   //self connection situation
 			}
-			
+
 			Set<String> currentConnections = new HashSet<String>();
 			for (PeerConnection peer:chatList
 					) {
+				if(desPort == peer.getPort()){
+					return "Already connected to this port\n";
+				}
 				currentConnections.add(peer.getHost());
 				if(currentConnections.size() > 2){
 					return "Three peers are already connected\n";

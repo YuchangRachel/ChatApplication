@@ -175,6 +175,15 @@ public class Chat {
 			if (desIp.equals(getMyIp())){
 				return "Self connection failed!!!\n";   //self connection situation
 			}
+			
+			Set<String> currentConnections = new HashSet<String>();
+			for (PeerConnection peer:chatList
+					) {
+				currentConnections.add(peer.getHost());
+				if(currentConnections.size() > 2){
+					return "Three peers are already connected\n";
+				}
+			}
 
 			Socket client = null;
 			PeerConnection newChat = null;

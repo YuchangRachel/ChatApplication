@@ -164,22 +164,26 @@ public class Chat {
 			   }
 			   */
 
-			Socket client = new Socket();
+			//Socket client = new Socket();
+			Socket client = null;
+			PeerConnection newChat = null;
 			try{
-				client.connect(new InetSocketAddress(desIp, desPort));
-				PeerConnection newChat = new PeerConnection(client, chatList);
+				//client.connect(new InetSocketAddress(desIp, desPort));
+				client = new Socket(desIp, desPort);
+				newChat = new PeerConnection(client, chatList);
 				newChat.start();
 
 				//add peer into list
 				chatList.add(newChat);
 
-				chatList.get(chatList.size()-1).sendMessage("The connection to another peer is successfully established");
-
-				return "The connection to peer " + desIp + " is successfully established\n";
 			}catch(Exception i){
 				return "Connection failed!!!";
 			}
 
+			System.out.println(chatList.get(0));
+			
+			chatList.get(chatList.size() - 1).connectNotify();
+			return "The connection to peer " + desIp + " is successfully established\n";
 
 
 		}
@@ -200,7 +204,7 @@ public class Chat {
 			if (msg.length() > 100)
 				return "Message is out of 100 characters long, including blank spaces!!!\n";
 			chatList.get(connId-1).sendMessage(msg);
-			return "Message sent out!\n";
+			return "Message sent to " + connId +  "\n";
 
 		}
 
@@ -265,12 +269,10 @@ public class Chat {
 						case -1: 
 							endThread = true;
 							System.out.println("\nClient " + getHost() + ":" + getPort() +" disconnected.\n");
-							System.out.print(">>");
 							peers.remove(this);
 							break;
 
 						case 1:
-							String connResponse = in.readUTF();
 							System.out.println("The connection to peer " + getHost() + " is successfully established");
 							break;
 
@@ -293,12 +295,17 @@ public class Chat {
 
 		}
 
+		public void connectNotify(){
+			try{
+				out.writeInt(1);
+				out.flush();
+			}catch(Exception e){
+				System.out.println(e);
+			}
+		}
+
 		public void sendMessage(String message) {
 			try {
-				out.writeInt(1);
-				out.writeUTF(message);
-				out.flush();
-
 				out.writeInt(2);
 				out.writeUTF(message);
 				out.flush();
@@ -306,6 +313,7 @@ public class Chat {
 				// System.out.println(e);
 			}
 		}
+
 
 		public void disconnect(){
 			try {

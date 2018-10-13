@@ -1,3 +1,8 @@
+/*
+ * Yuchang He (myip,myport,help,send)
+ * David Krystall (connect,list)
+ * Kaila Mayho (terminate, exit)
+*/
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -171,11 +176,9 @@ public class Chat {
 				return "Self connection failed!!!\n";   //self connection situation
 			}
 
-			//Socket client = new Socket();
 			Socket client = null;
 			PeerConnection newChat = null;
 			try{
-				//client.connect(new InetSocketAddress(desIp, desPort));
 				client = new Socket(desIp, desPort);
 				newChat = new PeerConnection(client, chatList);
 				newChat.start();

@@ -54,7 +54,8 @@ public class Chat {
 					System.out.print(server.terminate(input));
 				}
 				else if (lines[0].equals("exit")){
-
+					server.end();
+					break;
 				}
 				else {
 					System.out.println("Insert correct command input or enter 'help' to see manual!!!");
@@ -65,6 +66,8 @@ public class Chat {
 		}catch (IOException e){
 			e.printStackTrace();
 		}
+
+
 
 	}
 
@@ -128,7 +131,14 @@ public class Chat {
 				try{
 					conn = server.accept();
 				} catch (Exception e) {
-					e.printStackTrace();
+					if (server != null && !server.isClosed()) {
+						try {
+							server.close();
+						} catch (IOException i)
+						{
+							i.printStackTrace(System.err);
+						}
+					}
 				}
 
 				if (conn != null) {
@@ -225,9 +235,27 @@ public class Chat {
 			System.out.println("The Id your searching has either already been deleted or Id not found. Please check the list\n");
 			help();
 			}*/
-			return "Chat connection terminated\n";
+			return (chatNum+ 1 ) + " Chat connection terminated\n";
 		}
 
+
+		//exit
+		public void end(){
+			// go through the list through the list and terminate all connections
+			for(Iterator<PeerConnection> iter = chatList.iterator(); iter.hasNext();){
+				PeerConnection c = iter.next();
+				c.disconnect();
+				iter.remove();
+			}
+			try {
+				server.close();
+
+			}catch (Exception e){
+			}
+
+			endThread = true;
+
+		}
 
 
 		//validate ip
@@ -308,8 +336,9 @@ public class Chat {
 				} catch (Exception e) {}
 			}
 			try {
-				out.close();
 				in.close();
+				client.shutdownOutput();
+				out.close();
 				client.close();
 
 			} catch (Exception e) {}
